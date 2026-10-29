@@ -27,10 +27,13 @@ import {
   flagOutline,
   arrowBackOutline,
   createOutline,
+  personOutline,
+  cloudOfflineOutline,
 } from 'ionicons/icons';
 
 import { Task } from '../../models/task.model';
 import { TaskService } from '../../services/task.service';
+import { NetworkService } from '../../services/network.service';
 
 @Component({
   selector: 'app-task-detail',
@@ -57,6 +60,7 @@ import { TaskService } from '../../services/task.service';
 })
 export class TaskDetailPage implements OnInit {
   private readonly taskService = inject(TaskService);
+  private readonly networkService = inject(NetworkService);
   private readonly toastController = inject(ToastController);
   private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -76,6 +80,8 @@ export class TaskDetailPage implements OnInit {
       flagOutline,
       arrowBackOutline,
       createOutline,
+      personOutline,
+      cloudOfflineOutline,
     });
   }
 
@@ -98,6 +104,7 @@ export class TaskDetailPage implements OnInit {
     this.loading = true;
     this.error = '';
     this.cdr.detectChanges();
+
     this.taskService.getTask(this.taskId).subscribe({
       next: (task) => {
         this.task = task;
@@ -105,7 +112,7 @@ export class TaskDetailPage implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Failed to load task:', err);
+        console.error('[TaskDetailPage] Load error:', err);
         this.error = 'Failed to load task details.';
         this.loading = false;
         this.cdr.detectChanges();
@@ -120,25 +127,27 @@ export class TaskDetailPage implements OnInit {
     this.cdr.detectChanges();
     const newStatus = this.task.status === 'pending' ? 'completed' : 'pending';
 
-    this.taskService
-      .updateTask(this.task.id, { status: newStatus })
-      .subscribe({
-        next: (updatedTask) => {
-          this.task = updatedTask;
-          this.updating = false;
-          this.cdr.detectChanges();
-          void this.showToast(
-            `Task marked as ${updatedTask.status}`,
-            'success'
-          );
-        },
-        error: (err) => {
-          console.error('Failed to update task:', err);
-          this.updating = false;
-          this.cdr.detectChanges();
-          void this.showToast('Failed to update task status', 'danger');
-        },
-      });
+    this.taskService.updateTask(this.task.id, { status: newStatus }).subscribe({
+      next: (updatedTask) => {
+        this.task = updatedTask;
+        this.updating = false;
+        this.cdr.detectChanges();
+
+        const isOffline = updatedTask._unsynced;
+        void this.showToast(
+          isOffline
+            ? `Task marked as ${updatedTask.status} (offline - saved locally)`
+            : `Task marked as ${updatedTask.status}`,
+          isOffline ? 'warning' : 'success'
+        );
+      },
+      error: (err) => {
+        console.error('[TaskDetailPage] Update error:', err);
+        this.updating = false;
+        this.cdr.detectChanges();
+        void this.showToast('Failed to update task status', 'danger');
+      },
+    });
   }
 
   getPriorityColor(priority: string): string {

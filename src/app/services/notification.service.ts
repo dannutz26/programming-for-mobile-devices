@@ -1,10 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { WebSocketEvent } from '../models/task.model';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
+import { NetworkService } from './network.service';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+  private readonly authService = inject(AuthService);
+  private readonly networkService = inject(NetworkService);
+
   private ws: WebSocket | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private shouldReconnect = false;
@@ -12,15 +17,19 @@ export class NotificationService {
   /** Observable stream of WebSocket events */
   readonly notifications$ = new Subject<WebSocketEvent>();
 
-  /** Open a WebSocket connection to the server */
+  /** Open an authenticated WebSocket connection */
   connect(): void {
-    // Avoid duplicate connections
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    const token = this.authService.getToken();
+    if (!token || !this.networkService.isOnline) {
+      return;
+    }
+
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
     this.shouldReconnect = true;
-    this.createConnection();
+    this.createConnection(token);
   }
 
   /** Close the WebSocket connection and stop reconnecting */
@@ -38,35 +47,37 @@ export class NotificationService {
     }
   }
 
-  private createConnection(): void {
+  private createConnection(token: string): void {
     try {
-      this.ws = new WebSocket(environment.wsUrl);
+      const url = `${environment.wsUrl}?token=${encodeURIComponent(token)}`;
+      this.ws = new WebSocket(url);
+
+      this.ws.onopen = () => {
+        console.log('[WS] Authenticated WebSocket connected successfully');
+      };
 
       this.ws.onmessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data as string) as WebSocketEvent;
           this.notifications$.next(data);
         } catch {
-          console.error('Failed to parse WebSocket message:', event.data);
+          console.error('[WS] Failed to parse WebSocket message:', event.data);
         }
       };
 
       this.ws.onerror = (event: Event) => {
-        console.error('WebSocket error:', event);
+        console.warn('[WS] WebSocket error:', event);
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket connection closed');
-        if (this.shouldReconnect) {
+      this.ws.onclose = (event: CloseEvent) => {
+        console.log(`[WS] Connection closed (code: ${event.code}, reason: ${event.reason})`);
+        this.ws = null;
+        if (this.shouldReconnect && this.networkService.isOnline && this.authService.isAuthenticated()) {
           this.scheduleReconnect();
         }
       };
-
-      this.ws.onopen = () => {
-        console.log('WebSocket connection established');
-      };
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      console.error('[WS] Failed to instantiate WebSocket:', error);
       if (this.shouldReconnect) {
         this.scheduleReconnect();
       }
@@ -74,15 +85,17 @@ export class NotificationService {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimeout) {
-      return; // Already scheduled
-    }
-    console.log('Reconnecting WebSocket in 5 seconds...');
+    if (this.reconnectTimeout) return;
+
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null;
-      if (this.shouldReconnect) {
-        this.createConnection();
+      if (this.shouldReconnect && this.networkService.isOnline && this.authService.isAuthenticated()) {
+        const token = this.authService.getToken();
+        if (token) {
+          console.log('[WS] Attempting reconnection...');
+          this.createConnection(token);
+        }
       }
-    }, 5000);
+    }, 4000);
   }
 }

@@ -12,7 +12,7 @@
   @if (loading) {
     <div class="loading-container">
       <ion-spinner name="crescent"></ion-spinner>
-      <p>Loading task...</p>
+      <p>Loading task details...</p>
     </div>
   }
 
@@ -27,12 +27,31 @@
 
   <!-- Task Details -->
   @if (task && !loading) {
-    <ion-card>
+    <!-- Unsynced Warning Banner -->
+    @if (task._unsynced) {
+      <ion-card color="warning" class="offline-banner-card">
+        <ion-card-content class="offline-banner-content">
+          <ion-icon name="cloud-offline-outline" size="large"></ion-icon>
+          <div>
+            <strong>Offline / Unsynced Changes</strong>
+            <p>This item has local modifications not yet confirmed by the server.</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <ion-card class="detail-card">
       <ion-card-header>
-        <ion-card-title>{{ task.title }}</ion-card-title>
+        <div class="title-header-row">
+          <ion-card-title>{{ task.title }}</ion-card-title>
+          @if (task._unsynced) {
+            <ion-badge color="warning">Not Synced</ion-badge>
+          }
+        </div>
       </ion-card-header>
+
       <ion-card-content>
-        <p class="description">{{ task.description }}</p>
+        <p class="description">{{ task.description || 'No description provided.' }}</p>
 
         <div class="detail-row">
           <ion-icon name="flag-outline"></ion-icon>
@@ -57,6 +76,14 @@
           <span class="detail-label">Created:</span>
           <span>{{ task.createdAt | date:'medium' }}</span>
         </div>
+
+        @if (task.userId) {
+          <div class="detail-row">
+            <ion-icon name="person-outline"></ion-icon>
+            <span class="detail-label">Owner:</span>
+            <span class="owner-name">{{ task.userId }}</span>
+          </div>
+        }
       </ion-card-content>
     </ion-card>
 

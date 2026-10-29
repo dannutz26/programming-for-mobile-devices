@@ -11,7 +11,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "server": "cd server && node index.js",
-    "server:install": "cd server && npm install"
+    "server:install": "cd server && npm install",
+    "test:server": "cd server && node run-tests.js"
   },
   "private": true,
   "dependencies": {
