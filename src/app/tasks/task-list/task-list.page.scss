@@ -1,0 +1,40 @@
+.loading-container,
+.error-container,
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  ion-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 16px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+}
+
+.completed-task {
+  text-decoration: line-through;
+  color: var(--ion-color-medium) !important;
+}
+
+ion-item {
+  --padding-start: 16px;
+  --padding-end: 8px;
+
+  h2 {
+    font-weight: 600;
+    font-size: 16px;
+  }
+}
+
+ion-badge {
+  text-transform: capitalize;
+}

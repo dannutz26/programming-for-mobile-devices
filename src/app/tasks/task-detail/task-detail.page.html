@@ -1,0 +1,79 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tasks"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Task Details</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading task...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error && !loading) {
+    <div class="error-container">
+      <ion-icon name="alert-circle-outline" size="large" color="danger"></ion-icon>
+      <p>{{ error }}</p>
+      <ion-button fill="outline" routerLink="/tasks">Back to Tasks</ion-button>
+    </div>
+  }
+
+  <!-- Task Details -->
+  @if (task && !loading) {
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ task.title }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="description">{{ task.description }}</p>
+
+        <div class="detail-row">
+          <ion-icon name="flag-outline"></ion-icon>
+          <span class="detail-label">Priority:</span>
+          <ion-badge [color]="getPriorityColor(task.priority)">{{ task.priority }}</ion-badge>
+        </div>
+
+        <div class="detail-row">
+          <ion-icon [name]="task.status === 'completed' ? 'checkmark-circle-outline' : 'time-outline'"></ion-icon>
+          <span class="detail-label">Status:</span>
+          <ion-badge [color]="getStatusColor(task.status)">{{ task.status }}</ion-badge>
+        </div>
+
+        <div class="detail-row">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span class="detail-label">Due Date:</span>
+          <span>{{ task.dueDate | date:'medium' }}</span>
+        </div>
+
+        <div class="detail-row">
+          <ion-icon name="create-outline"></ion-icon>
+          <span class="detail-label">Created:</span>
+          <span>{{ task.createdAt | date:'medium' }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-button
+      expand="block"
+      [color]="task.status === 'pending' ? 'success' : 'warning'"
+      (click)="toggleStatus()"
+      [disabled]="updating"
+      class="status-button"
+    >
+      @if (updating) {
+        <ion-spinner name="crescent" slot="start"></ion-spinner>
+        Updating...
+      } @else {
+        <ion-icon [name]="task.status === 'pending' ? 'checkmark-circle-outline' : 'time-outline'" slot="start"></ion-icon>
+        {{ task.status === 'pending' ? 'Mark as Completed' : 'Mark as Pending' }}
+      }
+    </ion-button>
+  }
+</ion-content>

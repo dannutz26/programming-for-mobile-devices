@@ -1,0 +1,78 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Task Manager</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Search tasks..."
+      [debounce]="300"
+      (ionInput)="onSearchChange($any($event))"
+    ></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="statusFilter" (ionChange)="onStatusFilterChange($any($event))">
+      <ion-segment-button value="all">
+        <ion-label>All</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="pending">
+        <ion-label>Pending</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="completed">
+        <ion-label>Completed</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Loading State -->
+  @if (loading) {
+    <div class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading tasks...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error && !loading) {
+    <div class="error-container">
+      <ion-icon name="alert-circle-outline" size="large" color="danger"></ion-icon>
+      <p>{{ error }}</p>
+      <ion-button fill="outline" (click)="loadTasks()">Retry</ion-button>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @if (!loading && !error && filteredTasks.length === 0) {
+    <div class="empty-container">
+      <ion-icon name="list-outline" size="large" color="medium"></ion-icon>
+      <p>No tasks found</p>
+    </div>
+  }
+
+  <!-- Task List -->
+  @if (!loading && !error && filteredTasks.length > 0) {
+    <ion-list>
+      @for (task of filteredTasks; track task.id) {
+        <ion-item [routerLink]="['/tasks', task.id]" detail="true">
+          <ion-icon
+            slot="start"
+            [name]="task.status === 'completed' ? 'checkmark-circle-outline' : 'time-outline'"
+            [color]="getStatusColor(task.status)"
+          ></ion-icon>
+          <ion-label>
+            <h2 [class.completed-task]="task.status === 'completed'">{{ task.title }}</h2>
+            <p>Due: {{ task.dueDate | date:'mediumDate' }}</p>
+          </ion-label>
+          <ion-badge slot="end" [color]="getPriorityColor(task.priority)">
+            {{ task.priority }}
+          </ion-badge>
+        </ion-item>
+      }
+    </ion-list>
+  }
+</ion-content>
