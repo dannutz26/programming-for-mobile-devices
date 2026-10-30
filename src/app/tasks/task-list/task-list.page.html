@@ -20,11 +20,11 @@
         <ion-label>{{ authService.getUsername() }}</ion-label>
       </ion-chip>
 
-      <!-- Logout Button (High visibility button with icon & text) -->
-      <ion-button (click)="logout()" fill="solid" color="light" class="logout-btn">
-        <ion-icon slot="start" name="log-out-outline"></ion-icon>
-        Logout
-      </ion-button>
+      <!-- Logout Chip (Styled matching the other toolbar chips) -->
+      <ion-chip color="danger" class="logout-chip" (click)="logout()">
+        <ion-icon name="log-out-outline"></ion-icon>
+        <ion-label>Logout</ion-label>
+      </ion-chip>
     </ion-buttons>
   </ion-toolbar>
 
