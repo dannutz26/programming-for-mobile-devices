@@ -83,13 +83,6 @@ export class LoginPage {
     this.errorMessage = '';
   }
 
-  quickLogin(user: 'alice' | 'bob'): void {
-    this.username = user;
-    this.password = 'password';
-    this.mode = 'login';
-    this.onSubmit();
-  }
-
   onSubmit(): void {
     if (!this.username.trim() || !this.password.trim()) {
       this.errorMessage = 'Please enter both username and password';

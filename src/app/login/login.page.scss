@@ -47,25 +47,3 @@
   --border-radius: 10px;
   font-weight: 600;
 }
-
-.demo-section {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--ion-color-step-200, #ddd);
-}
-
-.demo-divider {
-  text-align: center;
-  margin-bottom: 12px;
-  span {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ion-color-medium);
-  }
-}
-
-.demo-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}

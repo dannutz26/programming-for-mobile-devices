@@ -77,39 +77,6 @@
             }
           </ion-button>
         </form>
-
-        <!-- Quick Demo Evaluation Buttons -->
-        <div class="demo-section">
-          <div class="demo-divider">
-            <span>⚡ Demo Quick Logins</span>
-          </div>
-
-          <div class="demo-buttons">
-            <ion-button
-              fill="outline"
-              color="secondary"
-              size="small"
-              expand="block"
-              (click)="quickLogin('alice')"
-              [disabled]="loading"
-            >
-              <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-              Login as Alice (12 Tasks)
-            </ion-button>
-
-            <ion-button
-              fill="outline"
-              color="tertiary"
-              size="small"
-              expand="block"
-              (click)="quickLogin('bob')"
-              [disabled]="loading"
-            >
-              <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-              Login as Bob (5 Tasks)
-            </ion-button>
-          </div>
-        </div>
       </ion-card-content>
     </ion-card>
   </div>
