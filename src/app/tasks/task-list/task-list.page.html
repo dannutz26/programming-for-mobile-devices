@@ -163,9 +163,32 @@
       </ion-infinite-scroll-content>
     </ion-infinite-scroll>
 
-    <!-- Page Summary Counter -->
-    <div class="pagination-footer">
-      <small>Showing {{ tasks.length }} of {{ totalTasks }} tasks</small>
+    <!-- Pagination Controls (Previous / Next Page Arrows) -->
+    <div class="pagination-bar">
+      <ion-button
+        fill="clear"
+        size="small"
+        [disabled]="currentPage <= 1 || loading"
+        (click)="prevPage()"
+        class="page-nav-btn"
+      >
+        <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+
+      <div class="pagination-info">
+        <span class="page-numbers">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong></span>
+        <small class="page-total">({{ totalTasks }} total tasks)</small>
+      </div>
+
+      <ion-button
+        fill="clear"
+        size="small"
+        [disabled]="currentPage >= totalPages || loading"
+        (click)="nextPage()"
+        class="page-nav-btn"
+      >
+        <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+      </ion-button>
     </div>
   }
 

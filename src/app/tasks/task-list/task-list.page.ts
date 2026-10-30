@@ -52,6 +52,8 @@ import {
   addOutline,
   personCircleOutline,
   cloudUploadOutline,
+  chevronBackOutline,
+  chevronForwardOutline as chevronRightOutline,
 } from 'ionicons/icons';
 
 import { Task } from '../../models/task.model';
@@ -142,6 +144,7 @@ export class TaskListPage implements OnInit, OnDestroy {
       addOutline,
       personCircleOutline,
       cloudUploadOutline,
+      chevronBackOutline,
     });
   }
 
@@ -364,6 +367,20 @@ export class TaskListPage implements OnInit, OnDestroy {
     const { data } = await modal.onWillDismiss<Task>();
     if (data) {
       this.resetAndLoadTasks();
+    }
+  }
+
+  /** Navigate to previous page */
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.loadTasks(this.currentPage - 1, false);
+    }
+  }
+
+  /** Navigate to next page */
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.loadTasks(this.currentPage + 1, false);
     }
   }
 
