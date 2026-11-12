@@ -110,13 +110,25 @@
   @if (tasks.length > 0) {
     <ion-list>
       @for (task of tasks; track task.id) {
-        <ion-item [routerLink]="['/tasks', task.id]" detail="true" class="task-item">
-          <!-- Status icon -->
-          <ion-icon
-            slot="start"
-            [name]="task.status === 'completed' ? 'checkmark-circle-outline' : 'time-outline'"
-            [color]="getStatusColor(task.status)"
-          ></ion-icon>
+        <ion-item
+          [routerLink]="['/tasks', task.id]"
+          detail="true"
+          class="task-item animated-item"
+          [style.animation-delay]="($index * 40) + 'ms'"
+        >
+          <!-- Task Photo Thumbnail (Ionic3: Show photo in list) OR Status Icon -->
+          @if (task.photoUrl) {
+            <ion-thumbnail slot="start" class="task-item-thumbnail">
+              <img [src]="task.photoUrl" alt="Task photo" />
+            </ion-thumbnail>
+          } @else {
+            <ion-icon
+              slot="start"
+              [name]="task.status === 'completed' ? 'checkmark-circle-outline' : 'time-outline'"
+              [color]="getStatusColor(task.status)"
+              class="task-status-icon"
+            ></ion-icon>
+          }
 
           <ion-label>
             <div class="title-row">
@@ -135,9 +147,15 @@
 
             <p class="description-preview">{{ task.description }}</p>
             <p class="meta-row">
-              Due: {{ task.dueDate | date:'mediumDate' }}
+              <span>Due: {{ task.dueDate | date:'mediumDate' }}</span>
               @if (task.userId) {
                 <span class="user-tag">• {{ task.userId }}</span>
+              }
+              @if (task.location) {
+                <span class="location-tag">
+                  <ion-icon name="pin-outline"></ion-icon>
+                  {{ task.location.lat | number: '1.2-2' }}, {{ task.location.lng | number: '1.2-2' }}
+                </span>
               }
             </p>
           </ion-label>
@@ -192,9 +210,9 @@
     </div>
   }
 
-  <!-- Floating Action Button: Add Task -->
+  <!-- Floating Action Button: Add Task (Animated component) -->
   <ion-fab slot="fixed" vertical="bottom" horizontal="end">
-    <ion-fab-button (click)="openCreateModal()" color="primary" title="Create New Task">
+    <ion-fab-button (click)="openCreateModal()" color="primary" class="pulse-animation" title="Create New Task">
       <ion-icon name="add-outline"></ion-icon>
     </ion-fab-button>
   </ion-fab>

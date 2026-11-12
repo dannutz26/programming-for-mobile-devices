@@ -5,7 +5,7 @@ import {
   ChangeDetectorRef,
   inject,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
@@ -33,6 +33,7 @@ import {
   IonFabButton,
   IonCard,
   IonCardContent,
+  IonThumbnail,
   ToastController,
   ModalController,
 } from '@ionic/angular';
@@ -54,6 +55,8 @@ import {
   cloudUploadOutline,
   chevronBackOutline,
   chevronForwardOutline as chevronRightOutline,
+  cameraOutline,
+  pinOutline,
 } from 'ionicons/icons';
 
 import { Task } from '../../models/task.model';
@@ -64,6 +67,7 @@ import { NetworkService } from '../../services/network.service';
 import { StorageService } from '../../services/storage.service';
 import { SyncService } from '../../services/sync.service';
 import { TaskCreateModalComponent } from '../task-create/task-create.modal';
+import { customModalEnterAnimation, customModalLeaveAnimation } from '../../animations/custom-animations';
 
 @Component({
   selector: 'app-task-list',
@@ -71,6 +75,7 @@ import { TaskCreateModalComponent } from '../task-create/task-create.modal';
   styleUrls: ['./task-list.page.scss'],
   imports: [
     DatePipe,
+    DecimalPipe,
     RouterLink,
     IonHeader,
     IonToolbar,
@@ -96,6 +101,7 @@ import { TaskCreateModalComponent } from '../task-create/task-create.modal';
     IonFabButton,
     IonCard,
     IonCardContent,
+    IonThumbnail,
   ],
 })
 export class TaskListPage implements OnInit, OnDestroy {
@@ -145,6 +151,8 @@ export class TaskListPage implements OnInit, OnDestroy {
       personCircleOutline,
       cloudUploadOutline,
       chevronBackOutline,
+      cameraOutline,
+      pinOutline,
     });
   }
 
@@ -361,6 +369,8 @@ export class TaskListPage implements OnInit, OnDestroy {
   async openCreateModal(): Promise<void> {
     const modal = await this.modalController.create({
       component: TaskCreateModalComponent,
+      enterAnimation: customModalEnterAnimation,
+      leaveAnimation: customModalLeaveAnimation,
     });
     await modal.present();
 

@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { WebSocketServer } = require('ws');
 const jwt = require('jsonwebtoken');
 
@@ -8,9 +10,44 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'ionic2-super-secret-jwt-key-2026';
 
+// Uploads directory for photos
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Ensure sample images exist for demonstration
+const sampleSvg1 = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#3880ff"/>
+  <rect x="50" y="50" width="300" height="200" rx="15" fill="#ffffff" fill-opacity="0.2"/>
+  <circle cx="200" cy="130" r="50" fill="#ffffff"/>
+  <path d="M120 220 C150 180, 250 180, 280 220" stroke="#ffffff" stroke-width="8" fill="none"/>
+  <text x="200" y="270" font-family="sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">UBB Campus Cluj</text>
+</svg>`;
+const sampleSvg2 = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#2dd36f"/>
+  <circle cx="200" cy="120" r="60" fill="#ffffff"/>
+  <rect x="140" y="190" width="120" height="60" rx="10" fill="#ffffff"/>
+  <text x="200" y="275" font-family="sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">Central Library</text>
+</svg>`;
+try {
+  if (!fs.existsSync(path.join(UPLOADS_DIR, 'sample_campus.svg'))) {
+    fs.writeFileSync(path.join(UPLOADS_DIR, 'sample_campus.svg'), sampleSvg1);
+  }
+  if (!fs.existsSync(path.join(UPLOADS_DIR, 'sample_library.svg'))) {
+    fs.writeFileSync(path.join(UPLOADS_DIR, 'sample_library.svg'), sampleSvg2);
+  }
+} catch (e) {
+  console.error('Could not write sample svg:', e.message);
+}
+
 // --- Middleware ---
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Serve uploaded photos statically
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // --- In-Memory Users ---
 const users = [
@@ -54,6 +91,12 @@ const tasks = [
     dueDate: '2026-10-20T23:59:00.000Z',
     createdAt: '2026-10-01T10:00:00.000Z',
     userId: 'alice',
+    location: {
+      lat: 46.7712,
+      lng: 23.6236,
+      address: 'Faculty of Mathematics and Computer Science, Cluj-Napoca',
+    },
+    photoUrl: 'http://localhost:3000/uploads/sample_campus.svg',
   },
   {
     id: '2',
@@ -64,6 +107,12 @@ const tasks = [
     dueDate: '2026-10-25T09:00:00.000Z',
     createdAt: '2026-10-05T14:30:00.000Z',
     userId: 'alice',
+    location: {
+      lat: 46.7693,
+      lng: 23.5898,
+      address: 'Central University Library Lucian Blaga, Cluj-Napoca',
+    },
+    photoUrl: 'http://localhost:3000/uploads/sample_library.svg',
   },
   {
     id: '3',
@@ -74,6 +123,11 @@ const tasks = [
     dueDate: '2026-10-18T18:00:00.000Z',
     createdAt: '2026-10-15T08:00:00.000Z',
     userId: 'alice',
+    location: {
+      lat: 46.7758,
+      lng: 23.5910,
+      address: 'Piata Mihai Viteazu, Cluj-Napoca',
+    },
   },
   {
     id: '4',
@@ -332,7 +386,7 @@ app.get('/api/tasks/:id', authenticateToken, (req, res) => {
 // POST /api/tasks — create a new task linked to authenticated user
 app.post('/api/tasks', authenticateToken, (req, res) => {
   const currentUsername = req.user.username;
-  const { title, description, priority, dueDate, status, clientTempId } = req.body;
+  const { title, description, priority, dueDate, status, clientTempId, photoUrl, location } = req.body;
 
   if (!title || !title.trim()) {
     return res.status(400).json({ error: 'Task title is required' });
@@ -350,6 +404,8 @@ app.post('/api/tasks', authenticateToken, (req, res) => {
     dueDate: dueDate || new Date(Date.now() + 86400000 * 3).toISOString(),
     createdAt: new Date().toISOString(),
     userId: currentUsername,
+    photoUrl: photoUrl || null,
+    location: location || null,
   };
 
   tasks.unshift(newTask);
@@ -377,7 +433,7 @@ app.patch('/api/tasks/:id', authenticateToken, (req, res) => {
     return res.status(404).json({ error: 'Task not found' });
   }
 
-  const allowedFields = ['title', 'description', 'status', 'priority', 'dueDate'];
+  const allowedFields = ['title', 'description', 'status', 'priority', 'dueDate', 'photoUrl', 'location'];
   const updates = req.body;
 
   const invalidFields = Object.keys(updates).filter(
@@ -418,6 +474,87 @@ app.patch('/api/tasks/:id', authenticateToken, (req, res) => {
   res.json(task);
 });
 
+// Helper to save base64 photo to disk
+function saveBase64Image(base64String, prefix = 'photo') {
+  const matches = base64String.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+  let ext = 'jpg';
+  let buffer;
+  if (matches) {
+    const mime = matches[1];
+    if (mime.includes('png')) ext = 'png';
+    else if (mime.includes('webp')) ext = 'webp';
+    buffer = Buffer.from(matches[2], 'base64');
+  } else {
+    buffer = Buffer.from(base64String, 'base64');
+  }
+
+  const filename = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`;
+  const filePath = path.join(UPLOADS_DIR, filename);
+  fs.writeFileSync(filePath, buffer);
+  return `/uploads/${filename}`;
+}
+
+// POST /api/tasks/:id/photo — upload a photo for a specific task
+app.post('/api/tasks/:id/photo', authenticateToken, (req, res) => {
+  const currentUsername = req.user.username;
+  const task = tasks.find((t) => t.id === req.params.id);
+
+  if (!task || task.userId !== currentUsername) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+
+  const { photo, photoUrl } = req.body;
+  if (!photo && !photoUrl) {
+    return res.status(400).json({ error: 'Photo data (base64) or photoUrl is required' });
+  }
+
+  try {
+    let savedUrl = photoUrl;
+    if (photo) {
+      const savedPath = saveBase64Image(photo, `task-${task.id}`);
+      savedUrl = `http://localhost:${PORT}${savedPath}`;
+    }
+
+    task.photoUrl = savedUrl;
+
+    broadcastToUser(currentUsername, {
+      type: 'task.updated',
+      payload: {
+        taskId: task.id,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        photoUrl: task.photoUrl,
+        task,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    console.log(`[TASKS] Photo uploaded for task #${task.id} by '${currentUsername}': ${savedUrl}`);
+    res.json({ success: true, photoUrl: savedUrl, task });
+  } catch (err) {
+    console.error('[TASKS] Error saving photo:', err);
+    res.status(500).json({ error: 'Failed to save photo' });
+  }
+});
+
+// POST /api/upload — standalone upload endpoint returning public URL
+app.post('/api/upload', authenticateToken, (req, res) => {
+  const { photo } = req.body;
+  if (!photo) {
+    return res.status(400).json({ error: 'Photo data (base64) is required' });
+  }
+
+  try {
+    const savedPath = saveBase64Image(photo, 'upload');
+    const publicUrl = `http://localhost:${PORT}${savedPath}`;
+    res.json({ success: true, photoUrl: publicUrl });
+  } catch (err) {
+    console.error('[UPLOAD] Error saving upload:', err);
+    res.status(500).json({ error: 'Failed to save photo' });
+  }
+});
+
 // POST /api/tasks/sync — batch synchronization for offline items
 app.post('/api/tasks/sync', authenticateToken, (req, res) => {
   const currentUsername = req.user.username;
@@ -437,6 +574,8 @@ app.post('/api/tasks/sync', authenticateToken, (req, res) => {
       dueDate: item.dueDate || new Date().toISOString(),
       createdAt: item.createdAt || new Date().toISOString(),
       userId: currentUsername,
+      photoUrl: item.photoUrl || null,
+      location: item.location || null,
     };
     tasks.unshift(newTask);
     syncedCreated.push({ clientTempId: item.id, serverTask: newTask });
@@ -451,6 +590,8 @@ app.post('/api/tasks/sync', authenticateToken, (req, res) => {
       if (item.status !== undefined) existing.status = item.status;
       if (item.priority !== undefined) existing.priority = item.priority;
       if (item.dueDate !== undefined) existing.dueDate = item.dueDate;
+      if (item.photoUrl !== undefined) existing.photoUrl = item.photoUrl;
+      if (item.location !== undefined) existing.location = item.location;
       syncedUpdated.push(existing);
     }
   });
@@ -540,12 +681,13 @@ wss.on('connection', (ws, req) => {
 // --- Start Server ---
 server.listen(PORT, () => {
   console.log(`\n  ======================================================`);
-  console.log(`  🚀 Ionic2 Task Manager Server Running on port ${PORT}!`);
+  console.log(`  🚀 Ionic3 Task Manager Server Running on port ${PORT}!`);
   console.log(`  ======================================================`);
   console.log(`  REST API:   http://localhost:${PORT}/api`);
   console.log(`  WebSocket:  ws://localhost:${PORT}/ws`);
+  console.log(`  Uploads:    http://localhost:${PORT}/uploads`);
   console.log(`\n  Pre-seeded users:`);
-  console.log(`    - alice / password  (12 tasks - test pagination)`);
+  console.log(`    - alice / password  (12 tasks - test pagination, locations, photos)`);
   console.log(`    - bob   / password  (5 tasks)`);
   console.log(`\n  Endpoints:`);
   console.log(`    POST   /api/auth/login        - Authenticate and get JWT`);
@@ -555,6 +697,8 @@ server.listen(PORT, () => {
   console.log(`    POST   /api/tasks             - Create user task`);
   console.log(`    GET    /api/tasks/:id         - Get user task`);
   console.log(`    PATCH  /api/tasks/:id         - Update user task`);
+  console.log(`    POST   /api/tasks/:id/photo   - Upload photo for a task`);
+  console.log(`    POST   /api/upload            - Upload standalone photo`);
   console.log(`    POST   /api/tasks/sync        - Synchronize offline items`);
   console.log(`    POST   /api/notifications/test- Send test notification\n`);
 });

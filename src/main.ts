@@ -12,11 +12,14 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 import { authInterceptor } from './app/interceptors/auth.interceptor';
+import { customNavAnimation } from './app/animations/custom-animations';
 
 bootstrapApplication(AppComponent, {
   providers: [
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-    provideIonicAngular(),
+    provideIonicAngular({
+      navAnimation: customNavAnimation,
+    }),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideRouter(
       routes,

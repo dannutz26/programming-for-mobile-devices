@@ -91,6 +91,9 @@ export class TaskService {
       dueDate: data.dueDate || new Date(Date.now() + 86400000 * 3).toISOString(),
       createdAt: new Date().toISOString(),
       userId: username,
+      photoUrl: data.photoUrl,
+      localPhotoPath: data.localPhotoPath,
+      location: data.location,
       _unsynced: true,
       _isNewOffline: true,
     };

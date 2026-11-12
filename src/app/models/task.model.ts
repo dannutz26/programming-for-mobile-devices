@@ -1,3 +1,9 @@
+export interface TaskLocation {
+  lat: number;
+  lng: number;
+  address?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -7,6 +13,9 @@ export interface Task {
   dueDate: string;
   createdAt: string;
   userId?: string;
+  photoUrl?: string; // Remote URL or data URL
+  localPhotoPath?: string; // Path on device filesystem
+  location?: TaskLocation; // Geolocation coordinates & address
   _unsynced?: boolean; // True if created or updated offline and not yet confirmed by server
   _isNewOffline?: boolean; // True if created offline (needs POST during sync)
 }

@@ -73,6 +73,37 @@
   --padding-end: 12px;
 }
 
+.task-item-thumbnail {
+  --size: 46px;
+  --border-radius: 8px;
+  margin-right: 12px;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.task-status-icon {
+  font-size: 22px;
+  margin-right: 8px;
+}
+
+.location-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ion-color-primary);
+  font-weight: 500;
+  margin-left: 6px;
+
+  ion-icon {
+    font-size: 13px;
+  }
+}
+
 .title-row {
   display: flex;
   align-items: center;

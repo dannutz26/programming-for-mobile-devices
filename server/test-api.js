@@ -13,7 +13,7 @@ function makeRequest(method, path, body = null, token = null) {
     }
 
     const options = {
-      hostname: 'localhost',
+      hostname: '127.0.0.1',
       port: 3000,
       path,
       method,
@@ -160,7 +160,7 @@ async function runTests() {
   // Test 10: Secured WebSocket test
   console.log('10. Secured WebSocket: Connect with Alice JWT token');
   await new Promise((resolve, reject) => {
-    const ws = new WebSocket(`ws://localhost:3000/ws?token=${aliceToken}`);
+    const ws = new WebSocket(`ws://127.0.0.1:3000/ws?token=${aliceToken}`);
     ws.on('open', () => {
       console.log('   WebSocket connection successfully opened with JWT!');
     });
@@ -184,7 +184,7 @@ async function runTests() {
   // Test 11: WebSocket rejection without token
   console.log('\n11. Secured WebSocket: Connect WITHOUT token (should be rejected)');
   await new Promise((resolve) => {
-    const ws = new WebSocket('ws://localhost:3000/ws');
+    const ws = new WebSocket('ws://127.0.0.1:3000/ws');
     ws.on('close', (code) => {
       console.log(`   WebSocket closed with code ${code} (expected 4001 or rejection)\n`);
       resolve();
@@ -195,8 +195,57 @@ async function runTests() {
     });
   });
 
+  // Test 12: Photo upload for a task (Ionic3)
+  console.log('12. POST /api/tasks/:id/photo: Upload task photo (base64)');
+  const sampleBase64 = Buffer.from('test-photo-data-bytes').toString('base64');
+  const photoRes = await makeRequest(
+    'POST',
+    `/api/tasks/${created.body.id}/photo`,
+    { photo: `data:image/jpeg;base64,${sampleBase64}` },
+    aliceToken
+  );
+  console.log(`   Status: ${photoRes.status}`);
+  console.log(`   PhotoUrl: ${photoRes.body.photoUrl}\n`);
+  if (photoRes.status !== 200 || !photoRes.body.photoUrl) {
+    throw new Error('Photo upload failed');
+  }
+
+  // Test 13: Standalone photo upload (Ionic3)
+  console.log('13. POST /api/upload: Standalone photo upload');
+  const uploadRes = await makeRequest(
+    'POST',
+    '/api/upload',
+    { photo: `data:image/jpeg;base64,${sampleBase64}` },
+    aliceToken
+  );
+  console.log(`   Status: ${uploadRes.status}`);
+  console.log(`   PhotoUrl: ${uploadRes.body.photoUrl}\n`);
+  if (uploadRes.status !== 200 || !uploadRes.body.photoUrl) {
+    throw new Error('Standalone upload failed');
+  }
+
+  // Test 14: Create and update task with Location (Ionic3)
+  console.log('14. PATCH /api/tasks/:id: Update task with Geolocation');
+  const locUpdate = await makeRequest(
+    'PATCH',
+    `/api/tasks/${created.body.id}`,
+    {
+      location: {
+        lat: 46.7712,
+        lng: 23.6236,
+        address: 'Faculty of Mathematics and Computer Science, Cluj-Napoca',
+      },
+    },
+    aliceToken
+  );
+  console.log(`   Status: ${locUpdate.status}`);
+  console.log(`   Location: lat=${locUpdate.body.location.lat}, lng=${locUpdate.body.location.lng}\n`);
+  if (locUpdate.status !== 200 || !locUpdate.body.location) {
+    throw new Error('Location update failed');
+  }
+
   console.log('==================================================');
-  console.log('✅ ALL 11 IONIC 2 BACKEND TESTS PASSED!');
+  console.log('✅ ALL 14 IONIC 3 BACKEND TESTS PASSED!');
   console.log('==================================================');
 }
 
